@@ -1,12 +1,102 @@
 import { THREE, color, range } from "../../../fachwerk.js";
 import Object3D from "./internal/Object3D.js";
 
-const InternalBox3 = {
+const FInternalBox3 = {
   mixins: [Object3D],
+  data() {
+    const {
+      width,
+      height,
+      depth,
+      r,
+      stroke,
+      strokeWidth,
+      fill,
+      scale,
+      position,
+      rotation,
+      opacity
+    } = this.$attrs;
+    let curObj = this.obj;
+    if (!curObj) {
+      var geometry = new THREE.BoxGeometry(
+        r ? r * 2 : width,
+        r ? r * 2 : height,
+        r ? r * 2 : depth
+      );
+      const material = new THREE.LineBasicMaterial({
+        linewidth: strokeWidth,
+        color: stroke || color("primary"),
+        opacity
+      });
+
+      if (!fill) {
+        const edges = new THREE.EdgesGeometry(geometry);
+        curObj = new THREE.LineSegments(edges, material);
+      }
+
+      if (fill == "auto") {
+        curObj = new THREE.Mesh(
+          geometry,
+          new THREE.MeshNormalMaterial({
+            opacity,
+            side: THREE.DoubleSide
+          })
+        );
+      }
+
+      if (fill && fill !== "auto") {
+        curObj = new THREE.Mesh(
+          geometry,
+          new THREE.MeshLambertMaterial({
+            transparent: true,
+            color: fill,
+            opacity: opacity,
+            side: THREE.DoubleSide
+          })
+        );
+      }
+    }
+    curObj.name = curObj.name || curObj.type;
+    return { curObj };
+  }
+};
+
+export default {
+  mixins: [Object3D],
+  components: { FInternalBox3 },
+  description: `
+Displays a 3D box.
+
+<f-scene3>
+  <f-rotation3>
+    <f-box3 />
+  </f-rotation3>
+</f-scene3>  
+
+<f-scene3>
+  <f-rotation3>
+    <f-box3 :stroke="color('red')" />
+  </f-rotation3>
+</f-scene3>  
+
+<f-scene3>
+  <f-rotation3>
+    <f-box3 :fill="color('red')" />
+  </f-rotation3>
+</f-scene3>  
+
+<f-scene3>
+  <f-rotation3>
+    <f-box3 fill="auto" />
+  </f-rotation3>
+</f-scene3>  
+
+`,
   props: {
-    width: { default: 1, type: [String, Number] },
-    height: { default: 1, type: [String, Number] },
-    depth: { default: 1, type: [String, Number] },
+    width: { default: 1, type: [Number, String] },
+    height: { default: 1, type: [Number, String] },
+    depth: { default: 1, type: [Number, String] },
     r: { default: "", type: [Number, String] },
     stroke: { default: "", type: String },
     strokeWidth: { default: 3, type: [String, Number] },
@@ -15,120 +105,80 @@ const InternalBox3 = {
     position: { default: "0 0 0", type: [String, Number, Array, Object] },
     rotation: { default: "0 0 0", type: [String, Number, Array, Object] },
     opacity: { default: 1, type: [Number, String] },
-    shading: { default: true, type: Boolean }
+    shading: { default: false, type: Boolean }
   },
-  data() {
-    let curObj = this.obj;
-    if (!curObj) {
-      var geometry = new THREE.BoxGeometry(
-        this.r ? this.r * 2 : this.width,
-        this.r ? this.r * 2 : this.height,
-        this.r ? this.r * 2 : this.depth
-      );
-      curObj = new THREE.Mesh(
-        geometry,
-        this.shading
-          ? new THREE.MeshNormalMaterial({
-              opacity: this.opacity,
-              side: THREE.DoubleSide
-            })
-          : new THREE.MeshLambertMaterial({
-              transparent: true,
-              color:
-                this.fill == "color('primary')" ? color("primary") : this.fill,
-              opacity: this.opacity,
-              side: THREE.DoubleSide
-            })
-      );
-    }
-    curObj.name = curObj.name || curObj.type;
-    return { curObj };
-  }
+  mounted() {
+    console.log("p", this.$props);
+  },
+  template: `
+  <f-group3
+    :position="position"
+    :rotation="rotation"
+    :scale="scale"
+  >
+    <f-internal-box3 v-bind="$props"  />
+  </f-group3>
+  `
 };
 
-export default {
-  components: { InternalBox3 },
-  description: `
-Displays a 3D box.
+/*
 
-<f-scene3>
-  <f-rotation3>
-    <f-grid3 />
-    <f-box3 :stroke="color('red')" fill />
-  </f-rotation3>
-</f-scene3>  
-  `,
-  mixins: [Object3D],
-  props: {
-    width: { default: 1, type: [Number, String] },
-    height: { default: 1, type: [Number, String] },
-    depth: { default: 1, type: [Number, String] },
-    r: { default: "", type: [Number, String] },
-    stroke: { default: "", type: String },
-    strokeWidth: { default: 3, type: [String, Number] },
-    fill: { default: "color('primary')", type: String },
-    scale: { default: "1 1 1", type: [String, Number, Array, Object] },
-    position: { default: "0 0 0", type: [String, Number, Array, Object] },
-    rotation: { default: "0 0 0", type: [String, Number, Array, Object] },
-    opacity: { default: 1, type: [Number, String] },
-    shading: { default: true, type: Boolean }
-  },
   computed: {
     frontfacePoints() {
       return [
         [
-          this.r ? this.r : this.width / 2,
-          this.r ? this.r : this.height / 2,
-          this.r ? this.r : this.depth / 2
+          r ? r : this.width / 2,
+          r ? r : this.height / 2,
+          r ? r : this.depth / 2
         ],
         [
-          this.r ? this.r : this.width / 2,
-          this.r ? -this.r : this.height / -2,
-          this.r ? this.r : this.depth / 2
+          r ? r : this.width / 2,
+          r ? -r : this.height / -2,
+          r ? r : this.depth / 2
         ],
         [
-          this.r ? -this.r : this.width / -2,
-          this.r ? -this.r : this.height / -2,
-          this.r ? this.r : this.depth / 2
+          r ? -r : this.width / -2,
+          r ? -r : this.height / -2,
+          r ? r : this.depth / 2
         ],
         [
-          this.r ? -this.r : this.width / -2,
-          this.r ? this.r : this.height / 2,
-          this.r ? this.r : this.depth / 2
+          r ? -r : this.width / -2,
+          r ? r : this.height / 2,
+          r ? r : this.depth / 2
         ],
         [
-          this.r ? this.r : this.width / 2,
-          this.r ? this.r : this.height / 2,
-          this.r ? this.r : this.depth / 2
+          r ? r : this.width / 2,
+          r ? r : this.height / 2,
+          r ? r : this.depth / 2
         ]
       ];
     },
     backfacePoints() {
       return [
         [
-          this.r ? this.r : this.width / 2,
-          this.r ? this.r : this.height / 2,
-          this.r ? -this.r : this.depth / -2
+          r ? r : this.width / 2,
+          r ? r : this.height / 2,
+          r ? -r : this.depth / -2
         ],
         [
-          this.r ? this.r : this.width / 2,
-          this.r ? -this.r : this.height / -2,
-          this.r ? -this.r : this.depth / -2
+          r ? r : this.width / 2,
+          r ? -r : this.height / -2,
+          r ? -r : this.depth / -2
         ],
         [
-          this.r ? -this.r : this.width / -2,
-          this.r ? -this.r : this.height / -2,
-          this.r ? -this.r : this.depth / -2
+          r ? -r : this.width / -2,
+          r ? -r : this.height / -2,
+          r ? -r : this.depth / -2
         ],
         [
-          this.r ? -this.r : this.width / -2,
-          this.r ? this.r : this.height / 2,
-          this.r ? -this.r : this.depth / -2
+          r ? -r : this.width / -2,
+          r ? r : this.height / 2,
+          r ? -r : this.depth / -2
         ],
         [
-          this.r ? this.r : this.width / 2,
-          this.r ? this.r : this.height / 2,
-          this.r ? -this.r : this.depth / -2
+          r ? r : this.width / 2,
+          r ? r : this.height / 2,
+          r ? -r : this.depth / -2
         ]
       ];
     },
@@ -176,4 +226,6 @@ Displays a 3D box.
       />
     </f-group3>
   `
-};
+
+
+  */
